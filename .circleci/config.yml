@@ -12,11 +12,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Pull Submodules"
-          command: |
-            git submodule init
-            git submodule update --remote
-      - run:
           name: "Build"
           command: ./wizard.sh -a
       - run:
@@ -34,27 +29,12 @@ jobs:
           at: '~/project'
       - run:
           name: "Compile"
-          command: ./wizard.sh -c
+          command: GOOS=linux GOARCH=amd64 ./wizard.sh -c
       - run:
           name: "Cleanup"
           command: |
             rm -rf frontend/build
             git checkout -- go.sum # TODO: why is it being changed?
-      - persist_to_workspace:
-          root: .
-          paths:
-            - '*'
-  docker-latest:
-    docker:
-      - image: docker
-    steps:
-      - attach_workspace:
-          at: '~/project'
-      - setup_remote_docker
-      - run: docker build -t filebrowser/filebrowser .
-      - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      - run: docker push filebrowser/filebrowser
-      - run: docker logout
       - persist_to_workspace:
           root: .
           paths:
@@ -96,13 +76,4 @@ workflows:
             tags:
               only: /^v.*/
             branches:
-              ignore: /.*/
-      - docker-latest:
-          context: deploy
-          requires:
-            - build-go
-          filters:
-            branches:
-              only: master
-            tags:
               ignore: /.*/
